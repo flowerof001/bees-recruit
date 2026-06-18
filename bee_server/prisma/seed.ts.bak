@@ -1,0 +1,56 @@
+import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🐝 初始化小蜜蜂招工平台数据...\n');
+
+  // 1. 平台
+  await prisma.platform.upsert({ where: { id: 'default' }, update: {}, create: { id: 'default', name: '小蜜蜂招工平台' } });
+  console.log('✅ 平台');
+
+  // 2. 管理员
+  const adminHash = await bcrypt.hash('admin123', 10);
+  await prisma.admin.upsert({ where: { username: 'admin' }, update: {}, create: { username: 'admin', passwordHash: adminHash, role: 'SUPER_ADMIN' } });
+  console.log('✅ 管理员 (admin / admin123)');
+
+  // 3. 订阅套餐
+  const plans = [
+    { name: 'FREE', nameCN: '免费版', priceMonthly: 0, priceYearly: 0, maxJobs: 3, maxRecruiters: 1, maxChatsPerDay: 10, features: ['发布3个岗位', '1位招聘者', '每日10次沟通', '基础简历查看'], recommended: false },
+    { name: 'PRO', nameCN: '专业版', priceMonthly: 29900, priceYearly: 299000, maxJobs: 20, maxRecruiters: 5, maxChatsPerDay: 100, features: ['发布20个岗位', '5位招聘者', '每日100次沟通', '简历高级筛选', '数据看板', '优先展示'], recommended: true },
+    { name: 'ENTERPRISE', nameCN: '企业版', priceMonthly: 99900, priceYearly: 999000, maxJobs: 200, maxRecruiters: 50, maxChatsPerDay: 1000, features: ['发布200个岗位', '50位招聘者', '无限沟通', 'API 对接', '专属客服', '定制品牌页'], recommended: false },
+  ];
+  for (const plan of plans) {
+    await prisma.subscriptionPlan.upsert({ where: { id: plan.name }, update: plan, create: { id: plan.name, ...plan } });
+  }
+  console.log('✅ 订阅套餐 (3个)');
+
+  // 4. 系统默认配置
+  const configs = [
+    { key: 'site.name', value: '小蜜蜂招工平台', description: '网站名称' },
+    { key: 'site.description', value: 'AI 时代的人才连接平台', description: '网站描述' },
+    { key: 'registration.auto_verify', value: 'true', description: '注册后自动验证' },
+    { key: 'job.max_tags', value: '10', description: '岗位最多标签数' },
+    { key: 'resume.max_count', value: '5', description: '每人最多简历数' },
+    { key: 'chat.max_daily_free', value: '10', description: '免费版每日聊天上限' },
+  ];
+  for (const config of configs) {
+    await prisma.systemConfig.upsert({
+      where: { key: config.key },
+      update: config,
+      create: config,
+    });
+  }
+  console.log('✅ 系统配置 (6个)');
+
+  console.log('\n🐝 种子数据初始化完成!');
+  console.log('   管理后台: admin / admin123');
+  console.log('   免费套餐: 3岗 / 1招聘者 / 10次沟通/日');
+  console.log('   专业套餐: ¥299/月 20岗 / 5招聘者 / 100次沟通/日');
+  console.log('   企业套餐: ¥999/月 200岗 / 50招聘者 / 无限沟通');
+}
+
+main()
+  .catch((e) => { console.error(e); process.exit(1); })
+  .finally(() => prisma.$disconnect());

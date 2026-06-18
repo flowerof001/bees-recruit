@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bee_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bee_recruit
+      POSTGRES_USER: bee_user
+      POSTGRES_PASSWORD: bee_pass_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bee_user -d bee_recruit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bee_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+  backend:
+    build:
+      context: ./bee_server
+      dockerfile: Dockerfile
+    container_name: bee_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://bee_user:bee_pass_2026@postgres:5432/bee_recruit"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "bee-recruit-jwt-secret-2026-prod"
+      PORT: "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: >
+      sh -c "npx prisma generate && npx prisma db push && npx ts-node prisma/seed.ts && node dist/main"
+
+volumes:
+  pgdata:
+  redisdata:

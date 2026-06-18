@@ -1,0 +1,406 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===== 平台方 =====
+model Platform {
+  id        String   @id @default(uuid())
+  name      String   @default("小蜜蜂招工平台")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenants       Tenant[]
+  subscriptions Subscription[]
+}
+
+// ===== 租户（企业/团队） =====
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  logo        String?
+  description String?
+  industry    String?
+  scale       String?
+  verified    Boolean      @default(false)
+  status      TenantStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  platformId   String
+  platform     Platform       @relation(fields: [platformId], references: [id])
+  members      TenantMember[]
+  jobs         Job[]
+  subscription Subscription?
+  payments     Payment[]
+  invoices     Invoice[]
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+// ===== 租户成员 =====
+model TenantMember {
+  id       String     @id @default(uuid())
+  role     MemberRole @default(RECRUITER)
+  joinedAt DateTime   @default(now())
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId])
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  RECRUITER
+}
+
+// ===== 用户 =====
+model User {
+  id            String     @id @default(uuid())
+  phone         String?    @unique
+  email         String?    @unique
+  wechatOpenId  String?    @unique
+  wechatUnionId String?    @unique
+  passwordHash  String?
+  nickname      String?
+  avatar        String?
+  role          UserRole   @default(JOB_SEEKER)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  tenantMembers        TenantMember[]
+  resumes              Resume[]
+  applications         Application[]
+  sentMessages         Message[]      @relation("Sender")
+  conversationsAsUser1 Conversation[] @relation("User1")
+  conversationsAsUser2 Conversation[] @relation("User2")
+  payments             Payment[]
+  notifications        Notification[]
+  jobs                 Job[]
+
+  @@index([phone])
+  @@index([wechatOpenId])
+}
+
+enum UserRole {
+  JOB_SEEKER
+  RECRUITER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
+// ===== 简历 =====
+model Resume {
+  id           String   @id @default(uuid())
+  name         String
+  title        String?
+  phone        String
+  email        String?
+  avatar       String?
+  gender       String?
+  birthYear    Int?
+  education    Json?
+  experience   Json?
+  skills       String[]
+  summary      String?
+  workYears    Int?
+  salaryExpect Json?
+  jobStatus    String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  applications Application[]
+}
+
+// ===== 岗位 =====
+model Job {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  requirements  String?
+  location      String?
+  locationType  String   @default("ONSITE")
+  salaryMin     Int?
+  salaryMax     Int?
+  experienceMin Int?
+  educationReq  String?
+  tags          String[]
+  headcount     Int      @default(1)
+  status        String   @default("OPEN")
+  viewCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  publisherId  String
+  publisher    User          @relation(fields: [publisherId], references: [id])
+  applications Application[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([title])
+}
+
+// ===== 投递申请 =====
+model Application {
+  id        String   @id @default(uuid())
+  status    String   @default("PENDING")
+  message   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobId    String
+  job      Job    @relation(fields: [jobId], references: [id])
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([jobId, userId])
+  @@index([jobId])
+  @@index([userId])
+}
+
+// ===== 会话（IM） =====
+model Conversation {
+  id           String    @id @default(uuid())
+  lastMessage  String?
+  lastSentAt   DateTime?
+  unreadCount1 Int       @default(0)
+  unreadCount2 Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user1Id  String
+  user1    User      @relation("User1", fields: [user1Id], references: [id])
+  user2Id  String
+  user2    User      @relation("User2", fields: [user2Id], references: [id])
+  messages Message[]
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+}
+
+// ===== 消息 =====
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  type      String   @default("TEXT")
+  metadata  Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation("Sender", fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+}
+
+// ===== 订阅套餐 =====
+model SubscriptionPlan {
+  id             String         @id @default(uuid())
+  name           String
+  nameCN         String
+  priceMonthly   Int
+  priceYearly    Int
+  maxJobs        Int
+  maxRecruiters  Int
+  maxChatsPerDay Int
+  features       String[]
+  recommended    Boolean        @default(false)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  subscriptions  Subscription[]
+}
+
+// ===== 租户订阅 =====
+model Subscription {
+  id           String    @id @default(uuid())
+  status       String    @default("ACTIVE")
+  startDate    DateTime  @default(now())
+  endDate      DateTime?
+  autoRenew    Boolean   @default(false)
+  jobPostsUsed Int       @default(0)
+  chatsUsed    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenantId   String
+  tenant     Tenant           @relation(fields: [tenantId], references: [id])
+  planId     String
+  plan       SubscriptionPlan @relation(fields: [planId], references: [id])
+  platformId String
+  platform   Platform         @relation(fields: [platformId], references: [id])
+  payments   Payment[]
+
+  @@unique([tenantId])
+}
+
+// ===== 支付记录 =====
+model Payment {
+  id            String    @id @default(uuid())
+  amount        Int
+  currency      String    @default("CNY")
+  method        String
+  status        String    @default("PENDING")
+  orderNo       String    @unique
+  transactionId String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  invoice        Invoice?
+
+  @@index([orderNo])
+  @@index([tenantId])
+}
+
+// ===== 通知 =====
+model Notification {
+  id        String   @id @default(uuid())
+  type      String
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+}
+
+// ===== 管理员 =====
+model Admin {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("OPERATOR")
+  createdAt    DateTime @default(now())
+}
+
+// ===== 发票 =====
+model Invoice {
+  id        String   @id @default(uuid())
+  invoiceNo String   @unique
+  amount    Int
+  title     String
+  taxNo     String?
+  type      String   @default("ELECTRONIC")
+  status    String   @default("ISSUED")
+  issuedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  paymentId String?  @unique
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  @@index([tenantId])
+}
+
+// ===== 登录日志 =====
+model LoginLog {
+  id         String   @id @default(uuid())
+  userId     String
+  method     String // PHONE / EMAIL / WECHAT / PASSWORD / ADMIN
+  ip         String?
+  userAgent  String?
+  device     String? // ios / android / macos / web
+  success    Boolean  @default(true)
+  failReason String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// ===== 设备会话 =====
+model DeviceSession {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceId     String   @unique
+  deviceName   String?
+  deviceType   String?
+  pushToken    String?
+  refreshToken String?
+  lastActiveAt DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ===== 密码重置 =====
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  method    String // PHONE / EMAIL
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ===== 审计日志 =====
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String?
+  userId     String?
+  action     String // CREATE / UPDATE / DELETE / LOGIN / LOGOUT / PAYMENT
+  resource   String // USER / JOB / RESUME / TENANT / SUBSCRIPTION
+  resourceId String?
+  detail     Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+// ===== 系统配置 =====
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}
