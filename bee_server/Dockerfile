@@ -3,7 +3,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci
+RUN npm ci && npx prisma generate
 
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY src ./src
@@ -17,7 +17,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
-# 启动脚本
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
