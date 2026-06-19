@@ -1,0 +1,8 @@
+{
+  "buildCommand": "flutter pub get && flutter build web --dart-define=production=true",
+  "outputDirectory": "build/web",
+  "framework": "flutter",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
