@@ -3,7 +3,6 @@ services:
   - type: web
     name: bee-api
     runtime: docker
-    repo: https://github.com/user/bees-recruit
     plan: free
     dockerfilePath: ./bee_server/Dockerfile
     dockerContext: ./bee_server
@@ -19,25 +18,11 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: PORT
+        value: "3000"
       - key: UPLOAD_BASE_URL
         value: "https://bee-api.onrender.com/uploads"
-        value: "3000"
       - key: NODE_ENV
         value: production
-
-  # Flutter Web 前端静态站点
-  - type: static
-    name: bee-web
-    plan: free
-    buildCommand: cd bee_app && flutter pub get && flutter build web
-    staticPublishPath: ./bee_app/build/web
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: FLUTTER_VERSION
-        value: "3.44.2"
 
 databases:
   - name: bee-db
