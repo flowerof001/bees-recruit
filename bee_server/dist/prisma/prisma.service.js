@@ -15,13 +15,24 @@ const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
 let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
     constructor() {
-        super({ log: ['error', 'warn'] });
+        const dbUrl = process.env.DATABASE_URL;
+        const opts = { log: ['error', 'warn'] };
+        if (dbUrl) {
+            try {
+                const { Pool } = require('pg');
+                const { PrismaPg } = require('@prisma/adapter-pg');
+                const pool = new Pool({ connectionString: dbUrl });
+                opts.adapter = new PrismaPg(pool);
+            }
+            catch (e) {
+            }
+        }
+        super(opts);
         this.logger = new common_1.Logger(PrismaService_1.name);
     }
     async onModuleInit() {
-        const dbUrl = process.env.DATABASE_URL;
-        if (!dbUrl) {
-            this.logger.warn('⚠️ DATABASE_URL 未设置，跳过数据库连接。请在 Render 环境变量中配置后重新部署。');
+        if (!process.env.DATABASE_URL) {
+            this.logger.warn('⚠️ DATABASE_URL 未设置，跳过数据库连接');
             return;
         }
         try {
@@ -29,16 +40,14 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
             this.logger.log('📦 Prisma 已连接 PostgreSQL');
         }
         catch (err) {
-            this.logger.error('❌ 数据库连接失败，服务将以降级模式运行');
-            this.logger.error(err.message);
+            this.logger.error('数据库连接失败: ' + err.message);
         }
     }
     async onModuleDestroy() {
         try {
             await this.$disconnect();
         }
-        catch (_) {
-        }
+        catch (_) { }
     }
 };
 exports.PrismaService = PrismaService;

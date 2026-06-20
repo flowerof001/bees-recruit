@@ -6,30 +6,37 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    super({ log: ['error', 'warn'] });
+    const dbUrl = process.env.DATABASE_URL;
+    const opts: any = { log: ['error', 'warn'] };
+
+    if (dbUrl) {
+      try {
+        const { Pool } = require('pg');
+        const { PrismaPg } = require('@prisma/adapter-pg');
+        const pool = new Pool({ connectionString: dbUrl });
+        opts.adapter = new PrismaPg(pool);
+      } catch (e) {
+        // adapter 不可用时降级
+      }
+    }
+
+    super(opts);
   }
 
   async onModuleInit() {
-    const dbUrl = process.env.DATABASE_URL;
-    if (!dbUrl) {
-      this.logger.warn('⚠️ DATABASE_URL 未设置，跳过数据库连接。请在 Render 环境变量中配置后重新部署。');
+    if (!process.env.DATABASE_URL) {
+      this.logger.warn('⚠️ DATABASE_URL 未设置，跳过数据库连接');
       return;
     }
-
     try {
       await this.$connect();
       this.logger.log('📦 Prisma 已连接 PostgreSQL');
     } catch (err) {
-      this.logger.error('❌ 数据库连接失败，服务将以降级模式运行');
-      this.logger.error((err as Error).message);
+      this.logger.error('数据库连接失败: ' + (err as Error).message);
     }
   }
 
   async onModuleDestroy() {
-    try {
-      await this.$disconnect();
-    } catch (_) {
-      // ignore disconnect errors
-    }
+    try { await this.$disconnect(); } catch (_) {}
   }
 }
