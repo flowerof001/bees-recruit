@@ -1,5 +1,4 @@
 services:
-  # NestJS 后端 API (Docker 部署)
   - type: web
     name: bee-api
     runtime: docker
@@ -10,22 +9,16 @@ services:
     autoDeploy: false
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: bee-db
-          property: connectionString
-      - key: REDIS_URL
         sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: PORT
         value: "3000"
-      - key: UPLOAD_BASE_URL
-        value: "https://bee-api.onrender.com/uploads"
       - key: NODE_ENV
         value: production
+      - key: UPLOAD_BASE_URL
+        sync: false
 
 databases:
   - name: bee-db
     plan: free
-    databaseName: bee_recruit
-    user: bee_user
