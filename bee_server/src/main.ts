@@ -15,6 +15,12 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
+  // 根路径重定向到 API 文档
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/', (req: any, res: any) => {
+    res.redirect('/api/docs');
+  });
+
   // Swagger
   const config = new DocumentBuilder()
     .setTitle('小蜜蜂招工平台 API')
@@ -26,7 +32,6 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   // 健康检查
-  const httpAdapter = app.getHttpAdapter();
   httpAdapter.get('/health', (req: any, res: any) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
   });

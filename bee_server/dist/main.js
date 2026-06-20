@@ -46,6 +46,10 @@ async function bootstrap() {
     app.enableCors({ origin: true, credentials: true });
     app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
     app.useStaticAssets((0, path_1.join)(process.cwd(), 'uploads'), { prefix: '/uploads/' });
+    const httpAdapter = app.getHttpAdapter();
+    httpAdapter.get('/', (req, res) => {
+        res.redirect('/api/docs');
+    });
     const config = new swagger_1.DocumentBuilder()
         .setTitle('小蜜蜂招工平台 API')
         .setDescription('BeeRecruit SaaS Platform')
@@ -54,7 +58,6 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('api/docs', app, document);
-    const httpAdapter = app.getHttpAdapter();
     httpAdapter.get('/health', (req, res) => {
         res.json({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() });
     });
