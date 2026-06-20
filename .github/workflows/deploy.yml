@@ -33,7 +33,7 @@ jobs:
         run: flutter pub get
       
       - name: Build web
-        run: flutter build web --release --base-href /bees-recruit/
+        run: flutter build web --release --base-href /bees-recruit/ --dart-define=production=true
       
       - name: Setup Pages
         uses: actions/configure-pages@v5
