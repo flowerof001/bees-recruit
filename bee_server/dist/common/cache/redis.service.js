@@ -26,6 +26,7 @@ let RedisService = RedisService_1 = class RedisService {
     async onModuleInit() {
         const url = this.configService.get('REDIS_URL', 'redis://localhost:6379');
         this.client = new ioredis_1.default(url, { maxRetriesPerRequest: 3, lazyConnect: true });
+        this.client.on("error", () => { });
         try {
             await this.client.connect();
             this.logger.log('Redis 连接成功');

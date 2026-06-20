@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
   // 生产环境使用 Render 后端地址，本地开发使用 localhost
-  static const String _prodUrl = 'https://bee-api.onrender.com/api/v1';
+  static const String _prodUrl = 'https://bee-api-86ve.onrender.com/api/v1';
   static const String _localUrl = 'http://localhost:3001/api/v1';
 
   static String get baseUrl {

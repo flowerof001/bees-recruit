@@ -18,7 +18,7 @@ class ChatProvider extends ChangeNotifier {
   int get unreadCount => _unreadCount;
 
   Future<void> connect(String userId) async {
-    _socket = io.io(const bool.fromEnvironment('production') ? 'https://bee-api.onrender.com/chat' : 'http://localhost:3001/chat', <String, dynamic>{
+    _socket = io.io(const bool.fromEnvironment('production') ? 'https://bee-api-86ve.onrender.com/chat' : 'http://localhost:3001/chat', <String, dynamic>{
       'transports': ['websocket'],
       'query': {'userId': userId},
     });

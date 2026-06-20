@@ -13,6 +13,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     const url = this.configService.get<string>('REDIS_URL', 'redis://localhost:6379');
     this.client = new Redis(url, { maxRetriesPerRequest: 3, lazyConnect: true });
+    this.client.on("error", () => {}); // 静默处理重连错误
     try {
       await this.client.connect();
       this.logger.log('Redis 连接成功');
