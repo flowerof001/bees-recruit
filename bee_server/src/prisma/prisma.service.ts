@@ -1,31 +1,27 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    const dbUrl = process.env.DATABASE_URL;
-    const opts: any = { log: ['error', 'warn'] };
-
-    if (dbUrl) {
-      try {
-        const { Pool } = require('pg');
-        const { PrismaPg } = require('@prisma/adapter-pg');
-        const pool = new Pool({ connectionString: dbUrl });
-        opts.adapter = new PrismaPg(pool);
-      } catch (e) {
-        // adapter 不可用时降级
-      }
+    const dbUrl = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
+    const pool = new Pool({ connectionString: dbUrl, max: 3 });
+    super({
+      adapter: new PrismaPg(pool),
+      log: ['error', 'warn'],
+    });
+    if (!process.env.DATABASE_URL) {
+      this.logger.warn('⚠️ DATABASE_URL 未设置，使用占位连接');
     }
-
-    super(opts);
   }
 
   async onModuleInit() {
     if (!process.env.DATABASE_URL) {
-      this.logger.warn('⚠️ DATABASE_URL 未设置，跳过数据库连接');
+      this.logger.warn('⚠️ 数据库未配置，服务以降级模式运行');
       return;
     }
     try {

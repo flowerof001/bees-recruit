@@ -13,26 +13,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrismaService = void 0;
 const common_1 = require("@nestjs/common");
 const client_1 = require("@prisma/client");
+const adapter_pg_1 = require("@prisma/adapter-pg");
+const pg_1 = require("pg");
 let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
     constructor() {
-        const dbUrl = process.env.DATABASE_URL;
-        const opts = { log: ['error', 'warn'] };
-        if (dbUrl) {
-            try {
-                const { Pool } = require('pg');
-                const { PrismaPg } = require('@prisma/adapter-pg');
-                const pool = new Pool({ connectionString: dbUrl });
-                opts.adapter = new PrismaPg(pool);
-            }
-            catch (e) {
-            }
-        }
-        super(opts);
+        const dbUrl = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
+        const pool = new pg_1.Pool({ connectionString: dbUrl, max: 3 });
+        super({
+            adapter: new adapter_pg_1.PrismaPg(pool),
+            log: ['error', 'warn'],
+        });
         this.logger = new common_1.Logger(PrismaService_1.name);
+        if (!process.env.DATABASE_URL) {
+            this.logger.warn('⚠️ DATABASE_URL 未设置，使用占位连接');
+        }
     }
     async onModuleInit() {
         if (!process.env.DATABASE_URL) {
-            this.logger.warn('⚠️ DATABASE_URL 未设置，跳过数据库连接');
+            this.logger.warn('⚠️ 数据库未配置，服务以降级模式运行');
             return;
         }
         try {
