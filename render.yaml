@@ -1,10 +1,10 @@
 services:
   - type: web
     name: bee-api
-    runtime: docker
+    runtime: node
     plan: free
-    dockerfilePath: ./bee_server/Dockerfile
-    dockerContext: ./bee_server
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma db push --skip-generate --accept-data-loss && node dist/main.js
     healthCheckPath: /health
     autoDeploy: false
     envVars:
