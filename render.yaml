@@ -7,7 +7,7 @@ services:
     buildCommand: npm install --omit=dev --legacy-peer-deps && npx prisma generate
     startCommand: node dist/main.js
     healthCheckPath: /health
-    autoDeploy: false
+    autoDeploy: true
     envVars:
       - key: DATABASE_URL
         sync: false
