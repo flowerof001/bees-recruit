@@ -35,4 +35,3 @@ bee_server/prisma/migrations/
 
 # Logs
 *.log
-dist/
