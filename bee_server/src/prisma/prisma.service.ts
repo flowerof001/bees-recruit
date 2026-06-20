@@ -6,33 +6,30 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    const dbUrl = process.env.DATABASE_URL || '';
-
-    if (!dbUrl) {
-      throw new Error(
-        '❌ DATABASE_URL 未设置。请在 Render Dashboard 中为 bee-api 服务添加环境变量 DATABASE_URL，\n' +
-        '   值为 bee-db 数据库的 Internal Connection String。'
-      );
-    }
-
-    // Render 使用 postgres://，Prisma 需要 postgresql://
-    const url = dbUrl.startsWith('postgres://') ? dbUrl.replace('postgres://', 'postgresql://') : dbUrl;
-
-    super({
-      log: ['error', 'warn'],
-    });
-
-    // 通过内部属性设置 datasource URL
-    this.logger.log(`Prisma 初始化完成，DB: ${url.replace(/\/\/.*@/, '//***@')}`);
+    super({ log: ['error', 'warn'] });
   }
 
   async onModuleInit() {
-    await this.$connect();
-    this.logger.log('📦 Prisma 已连接 PostgreSQL');
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      this.logger.warn('⚠️ DATABASE_URL 未设置，跳过数据库连接。请在 Render 环境变量中配置后重新部署。');
+      return;
+    }
+
+    try {
+      await this.$connect();
+      this.logger.log('📦 Prisma 已连接 PostgreSQL');
+    } catch (err) {
+      this.logger.error('❌ 数据库连接失败，服务将以降级模式运行');
+      this.logger.error((err as Error).message);
+    }
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
-    this.logger.log('📦 Prisma 已断开');
+    try {
+      await this.$disconnect();
+    } catch (_) {
+      // ignore disconnect errors
+    }
   }
 }
