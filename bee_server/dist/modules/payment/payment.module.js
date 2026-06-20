@@ -10,11 +10,17 @@ exports.PaymentModule = void 0;
 const common_1 = require("@nestjs/common");
 const payment_service_1 = require("./payment.service");
 const payment_controller_1 = require("./payment.controller");
+const subscription_module_1 = require("../subscription/subscription.module");
+const audit_module_1 = require("../audit/audit.module");
 let PaymentModule = class PaymentModule {
 };
 exports.PaymentModule = PaymentModule;
 exports.PaymentModule = PaymentModule = __decorate([
     (0, common_1.Module)({
+        imports: [
+            (0, common_1.forwardRef)(() => subscription_module_1.SubscriptionModule),
+            (0, common_1.forwardRef)(() => audit_module_1.AuditModule),
+        ],
         controllers: [payment_controller_1.PaymentController],
         providers: [payment_service_1.PaymentService],
         exports: [payment_service_1.PaymentService],
