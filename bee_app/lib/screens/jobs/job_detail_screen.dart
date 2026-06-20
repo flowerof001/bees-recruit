@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/job.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/auth_guard.dart';
 
 class JobDetailScreen extends StatelessWidget {
   final Job job;
@@ -8,6 +11,7 @@ class JobDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final auth = context.watch<AuthService>();
     return Scaffold(
       appBar: AppBar(title: const Text('岗位详情')),
       body: SingleChildScrollView(
@@ -75,7 +79,26 @@ class JobDetailScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    if (!auth.isLoggedIn) {
+                      AuthGuardDialog.show(
+                        context,
+                        actionLabel: '立即沟通',
+                        jobTitle: job.title,
+                        onAuthSuccess: () {
+                          // 认证成功后，回到岗位详情页并提示
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('登录成功！现在可以与「${job.title}」的招聘官沟通了')),
+                          );
+                        },
+                      );
+                    } else {
+                      // TODO: 实际的聊天逻辑
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('即将与「${job.title}」的招聘官沟通...')),
+                      );
+                    }
+                  },
                   icon: const Icon(Icons.chat_outlined),
                   label: const Text('立即沟通'),
                   style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -85,8 +108,21 @@ class JobDetailScreen extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // TODO: 投递简历
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('投递成功！')));
+                    if (!auth.isLoggedIn) {
+                      AuthGuardDialog.show(
+                        context,
+                        actionLabel: '投递简历',
+                        jobTitle: job.title,
+                        onAuthSuccess: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('登录成功！现在可以向「${job.title}」投递简历了')),
+                          );
+                        },
+                      );
+                    } else {
+                      // TODO: 投递简历
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('投递成功！')));
+                    }
                   },
                   icon: const Icon(Icons.send),
                   label: const Text('投递简历'),

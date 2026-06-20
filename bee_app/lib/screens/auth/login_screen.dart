@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (_phoneCtrl.text.length == 11 && _codeCtrl.text.isNotEmpty) {
                       await auth.loginByPhone(_phoneCtrl.text, _codeCtrl.text);
                       if (mounted) {
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+                        Navigator.pop(context);
                       }
                     }
                   },
@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }));
       await context.read<AuthService>().init();
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {

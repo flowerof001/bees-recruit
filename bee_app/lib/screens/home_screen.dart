@@ -9,6 +9,7 @@ import 'chat/conversation_list_screen.dart';
 import 'profile/profile_screen.dart';
 import 'jobs/job_post_screen.dart';
 import 'admin/admin_home_screen.dart';
+import 'auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,12 +25,17 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     final auth = context.read<AuthService>();
+    // 无论是否登录都加载岗位列表（游客可浏览）
+    context.read<JobProvider>().search();
     if (auth.currentUser != null) {
-      context.read<ChatProvider>().connect(auth.currentUser!.id);
-      context.read<ChatProvider>().loadConversations(auth.currentUser!.id);
-      context.read<JobProvider>().search();
-      context.read<NotificationProvider>().fetchUnreadCount();
+      _initLoggedIn(auth);
     }
+  }
+
+  void _initLoggedIn(AuthService auth) {
+    context.read<ChatProvider>().connect(auth.currentUser!.id);
+    context.read<ChatProvider>().loadConversations(auth.currentUser!.id);
+    context.read<NotificationProvider>().fetchUnreadCount();
   }
 
   @override
@@ -38,7 +44,39 @@ class _HomeScreenState extends State<HomeScreen> {
     final notif = context.watch<NotificationProvider>();
     final isRecruiter = auth.currentUser?.isRecruiter == true;
     final isAdmin = auth.currentUser?.role == 'ADMIN';
+    final isLoggedIn = auth.isLoggedIn;
 
+    // 游客只能看到岗位页面
+    if (!isLoggedIn) {
+      return Scaffold(
+        body: const JobListScreen(),
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, -2))],
+          ),
+          child: SafeArea(
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () => _navigateToLogin(context),
+                icon: const Icon(Icons.login),
+                label: const Text('登录/注册', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 登录用户完整界面
     final pages = <Widget>[
       const JobListScreen(),
       const ConversationListScreen(),
@@ -47,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      body: pages[_currentIndex],
+      body: pages[_currentIndex.clamp(0, pages.length - 1)],
       floatingActionButton: isRecruiter && _currentIndex == 0
         ? FloatingActionButton.extended(
             onPressed: () {
@@ -85,5 +123,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  void _navigateToLogin(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    ).then((_) {
+      // 登录成功后刷新状态
+      final auth = context.read<AuthService>();
+      if (auth.isLoggedIn) {
+        _initLoggedIn(auth);
+        setState(() {});
+      }
+    });
   }
 }

@@ -49,7 +49,7 @@ class BeeApp extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           ),
         ),
-        home: authService.isLoggedIn ? const HomeScreen() : const LoginScreen(),
+        home: const HomeScreen(),
       ),
     );
   }

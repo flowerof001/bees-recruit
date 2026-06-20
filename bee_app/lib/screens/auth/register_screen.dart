@@ -219,11 +219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 nickname: _nicknameCtrl.text.isNotEmpty ? _nicknameCtrl.text : null,
               );
               if (mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  (route) => false,
-                );
+                Navigator.pop(context);
               }
             } catch (e) {
               if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('注册失败: $e')));
