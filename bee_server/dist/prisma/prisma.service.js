@@ -18,7 +18,11 @@ const pg_1 = require("pg");
 let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
     constructor() {
         const dbUrl = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
-        const pool = new pg_1.Pool({ connectionString: dbUrl, max: 3 });
+        const pool = new pg_1.Pool({
+            connectionString: dbUrl,
+            max: 3,
+            ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+        });
         super({
             adapter: new adapter_pg_1.PrismaPg(pool),
             log: ['error', 'warn'],

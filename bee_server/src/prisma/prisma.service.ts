@@ -9,7 +9,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor() {
     const dbUrl = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
-    const pool = new Pool({ connectionString: dbUrl, max: 3 });
+    const pool = new Pool({
+      connectionString: dbUrl,
+      max: 3,
+      ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+    });
     super({
       adapter: new PrismaPg(pool),
       log: ['error', 'warn'],
